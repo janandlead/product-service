@@ -1,0 +1,45 @@
+server:
+  port: 8083
+spring:
+  application:
+    name: product-service
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/product_db}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:}
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: ${DDL_AUTO:update}
+    show-sql: ${SHOW_SQL:false}
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          time_zone: UTC
+        order_updates: true
+  jackson:
+    deserialization:
+      fail-on-unknown-properties: true
+      accept-float-as-int: false
+app:
+  security:
+    issuer: ${JWT_ISSUER:http://localhost:8081}
+    jwk-set-uri: ${JWT_JWK_SET_URI:http://localhost:8081/.well-known/jwks.json}
+    audience: ${JWT_AUDIENCE:product-service}
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never
+  metrics:
+    enable:
+      all: false
+  tracing:
+    enabled: false
+logging:
+  pattern:
+    level: "%5p [correlationId=%X{correlationId}]"

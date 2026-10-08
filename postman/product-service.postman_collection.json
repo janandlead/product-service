@@ -1,0 +1,1408 @@
+{
+  "info": {
+    "name": "Product Service - catalog and inventory",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Run sequentially with valid Auth Service ADMIN and SERVICE JWTs. IDs are stored automatically. Concurrent reservations: use scripts/concurrent-reservation.ps1 with a fresh one-unit product (see docs/API.md)."
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8083"
+    },
+    {
+      "key": "adminToken",
+      "value": ""
+    },
+    {
+      "key": "serviceToken",
+      "value": ""
+    },
+    {
+      "key": "productId",
+      "value": "1001"
+    },
+    {
+      "key": "releaseOrderId",
+      "value": "5001"
+    },
+    {
+      "key": "confirmOrderId",
+      "value": "5002"
+    },
+    {
+      "key": "failedOrderId",
+      "value": "5003"
+    }
+  ],
+  "item": [
+    {
+      "name": "01 Create product",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-Correlation-Id",
+            "value": "postman-{{$guid}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/products",
+        "description": "Creates product and inventory total=100, reserved=0. Saves productId.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"sku\": \"MOBILE-{{$timestamp}}\",\n  \"name\": \"Samsung Galaxy S25\",\n  \"description\": \"5G Smartphone\",\n  \"price\": 74999,\n  \"initialQuantity\": 100\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{adminToken}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "201 example",
+          "originalRequest": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "postman-{{$guid}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/products",
+            "description": "Creates product and inventory total=100, reserved=0. Saves productId.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sku\": \"MOBILE-{{$timestamp}}\",\n  \"name\": \"Samsung Galaxy S25\",\n  \"description\": \"5G Smartphone\",\n  \"price\": 74999,\n  \"initialQuantity\": 100\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "status": "Created",
+          "code": 201,
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": "{\n  \"id\": 1001,\n  \"sku\": \"MOBILE-001\",\n  \"name\": \"Samsung Galaxy S25\",\n  \"description\": \"5G Smartphone\",\n  \"price\": 74999,\n  \"status\": \"ACTIVE\",\n  \"createdAt\": \"2026-01-01T00:00:00\",\n  \"updatedAt\": \"2026-01-01T00:00:00\"\n}"
+        }
+      ],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
+              "if (pm.response.code === 201) pm.collectionVariables.set(\"productId\", pm.response.json().id);",
+              "pm.collectionVariables.set(\"releaseOrderId\", Date.now());",
+              "pm.collectionVariables.set(\"confirmOrderId\", Date.now() + 1);",
+              "pm.collectionVariables.set(\"failedOrderId\", Date.now() + 2);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 Get product",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-Correlation-Id",
+            "value": "postman-{{$guid}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/products/{{productId}}",
+        "description": "Read only.",
+        "auth": {
+          "type": "noauth"
+        }
+      },
+      "response": [
+        {
+          "name": "200 example",
+          "originalRequest": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "postman-{{$guid}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/products/{{productId}}",
+            "description": "Read only.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": "{\n  \"id\": 1001,\n  \"sku\": \"MOBILE-001\",\n  \"name\": \"Samsung Galaxy S25\",\n  \"description\": \"5G Smartphone\",\n  \"price\": 74999,\n  \"status\": \"ACTIVE\",\n  \"createdAt\": \"2026-01-01T00:00:00\",\n  \"updatedAt\": \"2026-01-01T00:00:00\"\n}"
+        }
+      ],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 Get all products",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-Correlation-Id",
+            "value": "postman-{{$guid}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/products?page=0&size=10&sort=price,desc",
+        "description": "Database pagination. Metadata depends on database contents.",
+        "auth": {
+          "type": "noauth"
+        }
+      },
+      "response": [
+        {
+          "name": "200 example",
+          "originalRequest": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "postman-{{$guid}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/products?page=0&size=10&sort=price,desc",
+            "description": "Database pagination. Metadata depends on database contents.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": "{\n  \"content\": [\n    {\n      \"id\": 1001,\n      \"sku\": \"MOBILE-001\",\n      \"name\": \"Samsung Galaxy S25\",\n      \"description\": \"5G Smartphone\",\n      \"price\": 74999,\n      \"status\": \"ACTIVE\",\n      \"createdAt\": \"2026-01-01T00:00:00\",\n      \"updatedAt\": \"2026-01-01T00:00:00\"\n    }\n  ],\n  \"page\": 0,\n  \"size\": 10,\n  \"totalElements\": 1,\n  \"totalPages\": 1,\n  \"last\": true\n}"
+        }
+      ],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 Search products",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-Correlation-Id",
+            "value": "postman-{{$guid}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/products/search?keyword=samsung&page=0&size=10",
+        "description": "Case-insensitive name/SKU search.",
+        "auth": {
+          "type": "noauth"
+        }
+      },
+      "response": [
+        {
+          "name": "200 example",
+          "originalRequest": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "postman-{{$guid}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/products/search?keyword=samsung&page=0&size=10",
+            "description": "Case-insensitive name/SKU search.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": "{\n  \"content\": [\n    {\n      \"id\": 1001,\n      \"sku\": \"MOBILE-001\",\n      \"name\": \"Samsung Galaxy S25\",\n      \"description\": \"5G Smartphone\",\n      \"price\": 74999,\n      \"status\": \"ACTIVE\",\n      \"createdAt\": \"2026-01-01T00:00:00\",\n      \"updatedAt\": \"2026-01-01T00:00:00\"\n    }\n  ],\n  \"page\": 0,\n  \"size\": 10,\n  \"totalElements\": 1,\n  \"totalPages\": 1,\n  \"last\": true\n}"
+        }
+      ],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 Update product",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "X-Correlation-Id",
+            "value": "postman-{{$guid}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/products/{{productId}}",
+        "description": "Updates catalog only.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"Samsung Galaxy S25 Ultra\",\n  \"description\": \"Updated Smartphone\",\n  \"price\": 84999\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{adminToken}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "200 example",
+          "originalRequest": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "postman-{{$guid}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/products/{{productId}}",
+            "description": "Updates catalog only.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Samsung Galaxy S25 Ultra\",\n  \"description\": \"Updated Smartphone\",\n  \"price\": 84999\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": "{\n  \"id\": 1001,\n  \"sku\": \"MOBILE-001\",\n  \"name\": \"Samsung Galaxy S25 Ultra\",\n  \"description\": \"Updated Smartphone\",\n  \"price\": 84999,\n  \"status\": \"ACTIVE\",\n  \"createdAt\": \"2026-01-01T00:00:00\",\n  \"updatedAt\": \"2026-01-01T00:00:00\"\n}"
+        }
+      ],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 Get inventory",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "X-Correlation-Id",
+            "value": "postman-{{$guid}}"
+          }
+        ],
+        "url": "{{baseUrl}}/internal/api/inventory/{{productId}}",
+        "description": "Availability is total minus reserved.",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{serviceToken}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "200 example",
+          "originalRequest": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "postman-{{$guid}}"
+              }
+            ],
+            "url": "{{baseUrl}}/internal/api/inventory/{{productId}}",
+            "description": "Availability is total minus reserved.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{serviceToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": "{\n  \"productId\": 1001,\n  \"totalQuantity\": 100,\n  \"reservedQuantity\": 0,\n  \"availableQuantity\": 100\n}"
+        }
+      ],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "07 Adjust inventory",
+      "request": {
+        "method": "PATCH",
+        "header": [
+          {
+            "key": "X-Correlation-Id",
+            "value": "postman-{{$guid}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/internal/api/inventory/{{productId}}/adjust",
+        "description": "total=150, reserved=0, available=150.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"quantityChange\": 50,\n  \"reason\": \"New stock received\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{adminToken}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "200 example",
+          "originalRequest": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "postman-{{$guid}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/internal/api/inventory/{{productId}}/adjust",
+            "description": "total=150, reserved=0, available=150.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantityChange\": 50,\n  \"reason\": \"New stock received\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": "{\n  \"productId\": 1001,\n  \"totalQuantity\": 150,\n  \"reservedQuantity\": 0,\n  \"availableQuantity\": 150\n}"
+        }
+      ],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "08 Reserve inventory",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-Correlation-Id",
+            "value": "postman-{{$guid}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/internal/api/inventory/reserve",
+        "description": "total=150, reserved=2, available=148. Adds reservation row.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"orderId\": {{releaseOrderId}},\n  \"items\": [\n    {\n      \"productId\": {{productId}},\n      \"quantity\": 2\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{serviceToken}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "200 example",
+          "originalRequest": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "postman-{{$guid}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/internal/api/inventory/reserve",
+            "description": "total=150, reserved=2, available=148. Adds reservation row.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": {{releaseOrderId}},\n  \"items\": [\n    {\n      \"productId\": {{productId}},\n      \"quantity\": 2\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{serviceToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": "{\n  \"orderId\": 5001,\n  \"items\": [\n    {\n      \"productId\": 1001,\n      \"quantity\": 2,\n      \"status\": \"RESERVED\"\n    }\n  ]\n}"
+        }
+      ],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "09 Duplicate reservation",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-Correlation-Id",
+            "value": "postman-{{$guid}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/internal/api/inventory/reserve",
+        "description": "Exact retry: no row or counter change.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"orderId\": {{releaseOrderId}},\n  \"items\": [\n    {\n      \"productId\": {{productId}},\n      \"quantity\": 2\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{serviceToken}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "200 example",
+          "originalRequest": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "postman-{{$guid}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/internal/api/inventory/reserve",
+            "description": "Exact retry: no row or counter change.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": {{releaseOrderId}},\n  \"items\": [\n    {\n      \"productId\": {{productId}},\n      \"quantity\": 2\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{serviceToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": "{\n  \"orderId\": 5001,\n  \"items\": [\n    {\n      \"productId\": 1001,\n      \"quantity\": 2,\n      \"status\": \"RESERVED\"\n    }\n  ]\n}"
+        }
+      ],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "10 Release inventory",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-Correlation-Id",
+            "value": "postman-{{$guid}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/internal/api/inventory/release",
+        "description": "total=150, reserved=0, available=150. Reservation becomes RELEASED.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"orderId\": {{releaseOrderId}}\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{serviceToken}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "200 example",
+          "originalRequest": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "postman-{{$guid}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/internal/api/inventory/release",
+            "description": "total=150, reserved=0, available=150. Reservation becomes RELEASED.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": {{releaseOrderId}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{serviceToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": "{\n  \"orderId\": 5001,\n  \"items\": [\n    {\n      \"productId\": 1001,\n      \"quantity\": 2,\n      \"status\": \"RELEASED\"\n    }\n  ]\n}"
+        }
+      ],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "11 Duplicate release",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-Correlation-Id",
+            "value": "postman-{{$guid}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/internal/api/inventory/release",
+        "description": "No counter change.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"orderId\": {{releaseOrderId}}\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{serviceToken}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "200 example",
+          "originalRequest": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "postman-{{$guid}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/internal/api/inventory/release",
+            "description": "No counter change.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": {{releaseOrderId}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{serviceToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": "{\n  \"orderId\": 5001,\n  \"items\": [\n    {\n      \"productId\": 1001,\n      \"quantity\": 2,\n      \"status\": \"RELEASED\"\n    }\n  ]\n}"
+        }
+      ],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "12 Reserve for confirmation",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-Correlation-Id",
+            "value": "postman-{{$guid}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/internal/api/inventory/reserve",
+        "description": "New order: total=150, reserved=2, available=148.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"orderId\": {{confirmOrderId}},\n  \"items\": [\n    {\n      \"productId\": {{productId}},\n      \"quantity\": 2\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{serviceToken}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "200 example",
+          "originalRequest": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "postman-{{$guid}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/internal/api/inventory/reserve",
+            "description": "New order: total=150, reserved=2, available=148.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": {{confirmOrderId}},\n  \"items\": [\n    {\n      \"productId\": {{productId}},\n      \"quantity\": 2\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{serviceToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": "{\n  \"orderId\": 5002,\n  \"items\": [\n    {\n      \"productId\": 1001,\n      \"quantity\": 2,\n      \"status\": \"RESERVED\"\n    }\n  ]\n}"
+        }
+      ],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "13 Confirm inventory",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-Correlation-Id",
+            "value": "postman-{{$guid}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/internal/api/inventory/confirm",
+        "description": "total=148, reserved=0, available=148. Reservation becomes CONFIRMED.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"orderId\": {{confirmOrderId}}\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{serviceToken}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "200 example",
+          "originalRequest": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "postman-{{$guid}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/internal/api/inventory/confirm",
+            "description": "total=148, reserved=0, available=148. Reservation becomes CONFIRMED.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": {{confirmOrderId}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{serviceToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": "{\n  \"orderId\": 5002,\n  \"items\": [\n    {\n      \"productId\": 1001,\n      \"quantity\": 2,\n      \"status\": \"CONFIRMED\"\n    }\n  ]\n}"
+        }
+      ],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "14 Duplicate confirmation",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-Correlation-Id",
+            "value": "postman-{{$guid}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/internal/api/inventory/confirm",
+        "description": "No counter change.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"orderId\": {{confirmOrderId}}\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{serviceToken}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "200 example",
+          "originalRequest": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "postman-{{$guid}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/internal/api/inventory/confirm",
+            "description": "No counter change.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": {{confirmOrderId}}\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{serviceToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "status": "OK",
+          "code": 200,
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": "{\n  \"orderId\": 5002,\n  \"items\": [\n    {\n      \"productId\": 1001,\n      \"quantity\": 2,\n      \"status\": \"CONFIRMED\"\n    }\n  ]\n}"
+        }
+      ],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "15 Insufficient stock",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-Correlation-Id",
+            "value": "postman-{{$guid}}"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/internal/api/inventory/reserve",
+        "description": "No inventory or reservation change.",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"orderId\": {{failedOrderId}},\n  \"items\": [\n    {\n      \"productId\": {{productId}},\n      \"quantity\": 1000000\n    }\n  ]\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        },
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{serviceToken}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "409 example",
+          "originalRequest": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "postman-{{$guid}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/internal/api/inventory/reserve",
+            "description": "No inventory or reservation change.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orderId\": {{failedOrderId}},\n  \"items\": [\n    {\n      \"productId\": {{productId}},\n      \"quantity\": 1000000\n    }\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{serviceToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "status": "Conflict",
+          "code": 409,
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": "{\n  \"timestamp\": \"2026-01-01T00:00:00Z\",\n  \"status\": 409,\n  \"code\": \"INSUFFICIENT_STOCK\",\n  \"message\": \"Insufficient stock for product 1001\",\n  \"path\": \"/internal/api/inventory/reserve\",\n  \"correlationId\": \"postman-example\",\n  \"availableQuantity\": 148,\n  \"requestedQuantity\": 1000000\n}"
+        }
+      ],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 409\", () => pm.response.to.have.status(409));",
+              "pm.test(\"Stock error\", () => pm.expect(pm.response.json().code).to.eql(\"INSUFFICIENT_STOCK\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "16 Delete product",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "X-Correlation-Id",
+            "value": "postman-{{$guid}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/products/{{productId}}",
+        "description": "Soft deletion after inventory exercises. Inventory and reservation history remain.",
+        "auth": {
+          "type": "bearer",
+          "bearer": [
+            {
+              "key": "token",
+              "value": "{{adminToken}}",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "response": [
+        {
+          "name": "204 example",
+          "originalRequest": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "X-Correlation-Id",
+                "value": "postman-{{$guid}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/products/{{productId}}",
+            "description": "Soft deletion after inventory exercises. Inventory and reservation history remain.",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{adminToken}}",
+                  "type": "string"
+                }
+              ]
+            }
+          },
+          "status": "No Content",
+          "code": 204,
+          "header": [
+            {
+              "key": "Content-Type",
+              "value": "application/json"
+            }
+          ],
+          "body": ""
+        }
+      ],
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 204\", () => pm.response.to.have.status(204));"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
