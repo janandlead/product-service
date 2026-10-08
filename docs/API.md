@@ -1,26 +1,26 @@
 # API and Postman walkthrough
 
-Import `postman/product-service.postman_collection.json`. Set `baseUrl`, `adminToken`, and `serviceToken`. All bodies are JSON, and all protected requests use `Authorization: Bearer <token>`. Send `X-Correlation-Id: lesson-1` to correlate requests and logs.
+Import `postman/product-service.postman_collection.json`. Set `baseUrl`. All bodies are JSON and no authentication header is required.
 
 Examples below assume product ID 1001. The collection captures real generated IDs. Its sequential lifecycle uses 100 initial units, adds 50, releases one order, and confirms another. The smaller examples below use separate 100-unit starting scenarios to explain each operation.
 
-| Method and path | Role | Success |
+| Method and path | Access | Success |
 |---|---|---|
-| POST /api/products | ADMIN | 201 with Location header |
+| POST /api/products | public | 201 with Location header |
 | GET /api/products/{productId} | public | 200 |
 | GET /api/products?page=0&size=10&sort=price,desc | public | 200 |
 | GET /api/products/search?keyword=samsung&page=0&size=10 | public | 200 |
-| PUT /api/products/{productId} | ADMIN | 200 |
-| DELETE /api/products/{productId} | ADMIN | 204 |
-| GET /internal/api/inventory/{productId} | ADMIN or SERVICE | 200 |
-| PATCH /internal/api/inventory/{productId}/adjust | ADMIN | 200 |
-| POST /internal/api/inventory/reserve | SERVICE | 200 |
-| POST /internal/api/inventory/release | SERVICE | 200 |
-| POST /internal/api/inventory/confirm | SERVICE | 200 |
+| PUT /api/products/{productId} | public | 200 |
+| DELETE /api/products/{productId} | public | 204 |
+| GET /internal/api/inventory/{productId} | public | 200 |
+| PATCH /internal/api/inventory/{productId}/adjust | public | 200 |
+| POST /internal/api/inventory/reserve | public | 200 |
+| POST /internal/api/inventory/release | public | 200 |
+| POST /internal/api/inventory/confirm | public | 200 |
 
 ## 1. Create product
 
-`POST http://localhost:8083/api/products`, ADMIN token:
+`POST http://localhost:8083/api/products`:
 
 ```json
 {
@@ -80,7 +80,7 @@ Size is 1–100. Sort accepts one field (`id`, `sku`, `name`, `price`, `createdA
 
 ## 5. Update product
 
-`PUT http://localhost:8083/api/products/1001`, ADMIN token:
+`PUT http://localhost:8083/api/products/1001`:
 
 ```json
 {"name":"Samsung Galaxy S25 Ultra","description":"Updated Smartphone","price":84999.00}
@@ -100,13 +100,13 @@ Updates product fields and version/timestamp; inventory is unchanged. This is a 
 
 ## 6. Delete product
 
-`DELETE http://localhost:8083/api/products/1001`, ADMIN token.
+`DELETE http://localhost:8083/api/products/1001`.
 
 204 No Content, empty body. Sets status=DELETED; no row is physically removed. Repeating delete on that existing deleted ID returns 204. Missing IDs return 404. Inventory and reservations remain so pending payments can complete. Run this after inventory exercises or use a different product.
 
 ## 7. Get inventory / check availability
 
-`GET http://localhost:8083/internal/api/inventory/1001`, SERVICE or ADMIN token:
+`GET http://localhost:8083/internal/api/inventory/1001`:
 
 ```json
 {"productId":1001,"totalQuantity":100,"reservedQuantity":20,"availableQuantity":80}
@@ -116,7 +116,7 @@ A client can compare requested quantity with availableQuantity, but this is a sn
 
 ## 8. Adjust inventory
 
-`PATCH http://localhost:8083/internal/api/inventory/1001/adjust`, ADMIN token:
+`PATCH http://localhost:8083/internal/api/inventory/1001/adjust`:
 
 ```json
 {"quantityChange":50,"reason":"New stock received"}
@@ -132,7 +132,7 @@ Total and inventory version change; reservation rows do not. Negative adjustment
 
 ## 9. Reserve inventory
 
-`POST http://localhost:8083/internal/api/inventory/reserve`, SERVICE token:
+`POST http://localhost:8083/internal/api/inventory/reserve`:
 
 ```json
 {"orderId":5001,"items":[{"productId":1001,"quantity":2}]}
@@ -162,7 +162,7 @@ Every line commits together. Failure on any product rolls back counters and rese
 
 ## 10. Release inventory
 
-`POST http://localhost:8083/internal/api/inventory/release`, SERVICE token:
+`POST http://localhost:8083/internal/api/inventory/release`:
 
 ```json
 {"orderId":5001}
@@ -178,7 +178,7 @@ From the reservation above: total=100, reserved=0, available=100. Reservation be
 
 ## 11. Confirm inventory
 
-Create a new reservation for order 5002, then `POST http://localhost:8083/internal/api/inventory/confirm`, SERVICE token:
+Create a new reservation for order 5002, then `POST http://localhost:8083/internal/api/inventory/confirm`:
 
 ```json
 {"orderId":5002}
@@ -209,7 +209,6 @@ With available=5, request:
   "code":"INSUFFICIENT_STOCK",
   "message":"Insufficient stock for product 1001",
   "path":"/internal/api/inventory/reserve",
-  "correlationId":"lesson-1",
   "availableQuantity":5,
   "requestedQuantity":10
 }
@@ -223,10 +222,10 @@ Send the exact same orderId/items again. 200 returns the existing current reserv
 
 ## 14. Concurrent stock reservation
 
-Create a new ACTIVE product with initialQuantity=1. Set its ID and a valid SERVICE token in PowerShell 7:
+Create a new ACTIVE product with initialQuantity=1. Set its ID in PowerShell 7:
 
 ```powershell
-./scripts/concurrent-reservation.ps1 -ProductId 1003 -ServiceToken $env:SERVICE_TOKEN
+./scripts/concurrent-reservation.ps1 -ProductId 1003
 ```
 
 The script sends two distinct order IDs in parallel. Expected: one 200 RESERVED and one 409 (INSUFFICIENT_STOCK or CONCURRENT_INVENTORY_CONFLICT). Final inventory is:
@@ -237,9 +236,9 @@ The script sends two distinct order IDs in parallel. Expected: one 200 RESERVED 
 
 Exactly one reservation row exists. Real HTTP timing may allow the loser to read the already-updated stock; the PostgreSQL integration test uses a barrier to deterministically force the optimistic-lock path. Postman's normal collection runner is sequential, so use the supplied script or two simultaneous clients for this scenario.
 
-## Validation and authorization checks
+## Validation checks
 
-Remove the bearer header from a protected call: 401. Use SERVICE for product creation or adjustment: 403. Use ADMIN without SERVICE for reserve/release/confirm: 403. JWT signature, issuer, audience, or lifetime failure: 401.
+All endpoints are public in the current application. Invalid JSON, missing required fields, invalid path/query values, and business conflicts return the documented 400 or 409 responses.
 
-All errors use timestamp/status/code/message/path/correlationId, with fieldErrors for body validation and quantity details for insufficient stock. Internal exception messages and SQL are not returned. A correlation header is returned for authentication errors too.
+All errors use timestamp/status/code/message/path, with fieldErrors for body validation and quantity details for insufficient stock. Internal exception messages and SQL are not returned.
 

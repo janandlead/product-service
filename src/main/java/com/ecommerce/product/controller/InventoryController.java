@@ -4,22 +4,18 @@ import com.ecommerce.product.dto.request.*;
 import com.ecommerce.product.dto.response.*;
 import com.ecommerce.product.service.InventoryService;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/internal/api/inventory")
 @Tag(name = "Inventory", description = "Trusted service inventory operations; adjustment requires ADMIN")
-@SecurityRequirement(name = "bearerAuth")
+@RequiredArgsConstructor
 public class InventoryController {
 	private final InventoryService service;
-
-	public InventoryController(InventoryService service) {
-		this.service = service;
-	}
 
 	@GetMapping("/{productId}")
 	@Operation(summary = "Get total, reserved and available stock")

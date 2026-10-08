@@ -2,20 +2,12 @@
   "info": {
     "name": "Product Service - catalog and inventory",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "description": "Run sequentially with valid Auth Service ADMIN and SERVICE JWTs. IDs are stored automatically. Concurrent reservations: use scripts/concurrent-reservation.ps1 with a fresh one-unit product (see docs/API.md)."
+    "description": "Run sequentially against the public Product Service API. IDs are stored automatically. Concurrent reservations: use scripts/concurrent-reservation.ps1 with a fresh one-unit product (see docs/API.md)."
   },
   "variable": [
     {
       "key": "baseUrl",
       "value": "http://localhost:8083"
-    },
-    {
-      "key": "adminToken",
-      "value": ""
-    },
-    {
-      "key": "serviceToken",
-      "value": ""
     },
     {
       "key": "productId",
@@ -41,10 +33,6 @@
         "method": "POST",
         "header": [
           {
-            "key": "X-Correlation-Id",
-            "value": "postman-{{$guid}}"
-          },
-          {
             "key": "Content-Type",
             "value": "application/json"
           }
@@ -59,16 +47,6 @@
               "language": "json"
             }
           }
-        },
-        "auth": {
-          "type": "bearer",
-          "bearer": [
-            {
-              "key": "token",
-              "value": "{{adminToken}}",
-              "type": "string"
-            }
-          ]
         }
       },
       "response": [
@@ -77,10 +55,6 @@
           "originalRequest": {
             "method": "POST",
             "header": [
-              {
-                "key": "X-Correlation-Id",
-                "value": "postman-{{$guid}}"
-              },
               {
                 "key": "Content-Type",
                 "value": "application/json"
@@ -96,16 +70,6 @@
                   "language": "json"
                 }
               }
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{adminToken}}",
-                  "type": "string"
-                }
-              ]
             }
           },
           "status": "Created",
@@ -139,34 +103,18 @@
       "name": "02 Get product",
       "request": {
         "method": "GET",
-        "header": [
-          {
-            "key": "X-Correlation-Id",
-            "value": "postman-{{$guid}}"
-          }
-        ],
+        "header": [],
         "url": "{{baseUrl}}/api/products/{{productId}}",
-        "description": "Read only.",
-        "auth": {
-          "type": "noauth"
-        }
+        "description": "Read only."
       },
       "response": [
         {
           "name": "200 example",
           "originalRequest": {
             "method": "GET",
-            "header": [
-              {
-                "key": "X-Correlation-Id",
-                "value": "postman-{{$guid}}"
-              }
-            ],
+            "header": [],
             "url": "{{baseUrl}}/api/products/{{productId}}",
-            "description": "Read only.",
-            "auth": {
-              "type": "noauth"
-            }
+            "description": "Read only."
           },
           "status": "OK",
           "code": 200,
@@ -195,34 +143,18 @@
       "name": "03 Get all products",
       "request": {
         "method": "GET",
-        "header": [
-          {
-            "key": "X-Correlation-Id",
-            "value": "postman-{{$guid}}"
-          }
-        ],
+        "header": [],
         "url": "{{baseUrl}}/api/products?page=0&size=10&sort=price,desc",
-        "description": "Database pagination. Metadata depends on database contents.",
-        "auth": {
-          "type": "noauth"
-        }
+        "description": "Database pagination. Metadata depends on database contents."
       },
       "response": [
         {
           "name": "200 example",
           "originalRequest": {
             "method": "GET",
-            "header": [
-              {
-                "key": "X-Correlation-Id",
-                "value": "postman-{{$guid}}"
-              }
-            ],
+            "header": [],
             "url": "{{baseUrl}}/api/products?page=0&size=10&sort=price,desc",
-            "description": "Database pagination. Metadata depends on database contents.",
-            "auth": {
-              "type": "noauth"
-            }
+            "description": "Database pagination. Metadata depends on database contents."
           },
           "status": "OK",
           "code": 200,
@@ -251,34 +183,18 @@
       "name": "04 Search products",
       "request": {
         "method": "GET",
-        "header": [
-          {
-            "key": "X-Correlation-Id",
-            "value": "postman-{{$guid}}"
-          }
-        ],
+        "header": [],
         "url": "{{baseUrl}}/api/products/search?keyword=samsung&page=0&size=10",
-        "description": "Case-insensitive name/SKU search.",
-        "auth": {
-          "type": "noauth"
-        }
+        "description": "Case-insensitive name/SKU search."
       },
       "response": [
         {
           "name": "200 example",
           "originalRequest": {
             "method": "GET",
-            "header": [
-              {
-                "key": "X-Correlation-Id",
-                "value": "postman-{{$guid}}"
-              }
-            ],
+            "header": [],
             "url": "{{baseUrl}}/api/products/search?keyword=samsung&page=0&size=10",
-            "description": "Case-insensitive name/SKU search.",
-            "auth": {
-              "type": "noauth"
-            }
+            "description": "Case-insensitive name/SKU search."
           },
           "status": "OK",
           "code": 200,
@@ -309,10 +225,6 @@
         "method": "PUT",
         "header": [
           {
-            "key": "X-Correlation-Id",
-            "value": "postman-{{$guid}}"
-          },
-          {
             "key": "Content-Type",
             "value": "application/json"
           }
@@ -327,16 +239,6 @@
               "language": "json"
             }
           }
-        },
-        "auth": {
-          "type": "bearer",
-          "bearer": [
-            {
-              "key": "token",
-              "value": "{{adminToken}}",
-              "type": "string"
-            }
-          ]
         }
       },
       "response": [
@@ -345,10 +247,6 @@
           "originalRequest": {
             "method": "PUT",
             "header": [
-              {
-                "key": "X-Correlation-Id",
-                "value": "postman-{{$guid}}"
-              },
               {
                 "key": "Content-Type",
                 "value": "application/json"
@@ -364,16 +262,6 @@
                   "language": "json"
                 }
               }
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{adminToken}}",
-                  "type": "string"
-                }
-              ]
             }
           },
           "status": "OK",
@@ -403,48 +291,18 @@
       "name": "06 Get inventory",
       "request": {
         "method": "GET",
-        "header": [
-          {
-            "key": "X-Correlation-Id",
-            "value": "postman-{{$guid}}"
-          }
-        ],
+        "header": [],
         "url": "{{baseUrl}}/internal/api/inventory/{{productId}}",
-        "description": "Availability is total minus reserved.",
-        "auth": {
-          "type": "bearer",
-          "bearer": [
-            {
-              "key": "token",
-              "value": "{{serviceToken}}",
-              "type": "string"
-            }
-          ]
-        }
+        "description": "Availability is total minus reserved."
       },
       "response": [
         {
           "name": "200 example",
           "originalRequest": {
             "method": "GET",
-            "header": [
-              {
-                "key": "X-Correlation-Id",
-                "value": "postman-{{$guid}}"
-              }
-            ],
+            "header": [],
             "url": "{{baseUrl}}/internal/api/inventory/{{productId}}",
-            "description": "Availability is total minus reserved.",
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{serviceToken}}",
-                  "type": "string"
-                }
-              ]
-            }
+            "description": "Availability is total minus reserved."
           },
           "status": "OK",
           "code": 200,
@@ -475,10 +333,6 @@
         "method": "PATCH",
         "header": [
           {
-            "key": "X-Correlation-Id",
-            "value": "postman-{{$guid}}"
-          },
-          {
             "key": "Content-Type",
             "value": "application/json"
           }
@@ -493,16 +347,6 @@
               "language": "json"
             }
           }
-        },
-        "auth": {
-          "type": "bearer",
-          "bearer": [
-            {
-              "key": "token",
-              "value": "{{adminToken}}",
-              "type": "string"
-            }
-          ]
         }
       },
       "response": [
@@ -511,10 +355,6 @@
           "originalRequest": {
             "method": "PATCH",
             "header": [
-              {
-                "key": "X-Correlation-Id",
-                "value": "postman-{{$guid}}"
-              },
               {
                 "key": "Content-Type",
                 "value": "application/json"
@@ -530,16 +370,6 @@
                   "language": "json"
                 }
               }
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{adminToken}}",
-                  "type": "string"
-                }
-              ]
             }
           },
           "status": "OK",
@@ -571,10 +401,6 @@
         "method": "POST",
         "header": [
           {
-            "key": "X-Correlation-Id",
-            "value": "postman-{{$guid}}"
-          },
-          {
             "key": "Content-Type",
             "value": "application/json"
           }
@@ -589,16 +415,6 @@
               "language": "json"
             }
           }
-        },
-        "auth": {
-          "type": "bearer",
-          "bearer": [
-            {
-              "key": "token",
-              "value": "{{serviceToken}}",
-              "type": "string"
-            }
-          ]
         }
       },
       "response": [
@@ -607,10 +423,6 @@
           "originalRequest": {
             "method": "POST",
             "header": [
-              {
-                "key": "X-Correlation-Id",
-                "value": "postman-{{$guid}}"
-              },
               {
                 "key": "Content-Type",
                 "value": "application/json"
@@ -626,16 +438,6 @@
                   "language": "json"
                 }
               }
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{serviceToken}}",
-                  "type": "string"
-                }
-              ]
             }
           },
           "status": "OK",
@@ -667,10 +469,6 @@
         "method": "POST",
         "header": [
           {
-            "key": "X-Correlation-Id",
-            "value": "postman-{{$guid}}"
-          },
-          {
             "key": "Content-Type",
             "value": "application/json"
           }
@@ -685,16 +483,6 @@
               "language": "json"
             }
           }
-        },
-        "auth": {
-          "type": "bearer",
-          "bearer": [
-            {
-              "key": "token",
-              "value": "{{serviceToken}}",
-              "type": "string"
-            }
-          ]
         }
       },
       "response": [
@@ -703,10 +491,6 @@
           "originalRequest": {
             "method": "POST",
             "header": [
-              {
-                "key": "X-Correlation-Id",
-                "value": "postman-{{$guid}}"
-              },
               {
                 "key": "Content-Type",
                 "value": "application/json"
@@ -722,16 +506,6 @@
                   "language": "json"
                 }
               }
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{serviceToken}}",
-                  "type": "string"
-                }
-              ]
             }
           },
           "status": "OK",
@@ -763,10 +537,6 @@
         "method": "POST",
         "header": [
           {
-            "key": "X-Correlation-Id",
-            "value": "postman-{{$guid}}"
-          },
-          {
             "key": "Content-Type",
             "value": "application/json"
           }
@@ -781,16 +551,6 @@
               "language": "json"
             }
           }
-        },
-        "auth": {
-          "type": "bearer",
-          "bearer": [
-            {
-              "key": "token",
-              "value": "{{serviceToken}}",
-              "type": "string"
-            }
-          ]
         }
       },
       "response": [
@@ -799,10 +559,6 @@
           "originalRequest": {
             "method": "POST",
             "header": [
-              {
-                "key": "X-Correlation-Id",
-                "value": "postman-{{$guid}}"
-              },
               {
                 "key": "Content-Type",
                 "value": "application/json"
@@ -818,16 +574,6 @@
                   "language": "json"
                 }
               }
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{serviceToken}}",
-                  "type": "string"
-                }
-              ]
             }
           },
           "status": "OK",
@@ -859,10 +605,6 @@
         "method": "POST",
         "header": [
           {
-            "key": "X-Correlation-Id",
-            "value": "postman-{{$guid}}"
-          },
-          {
             "key": "Content-Type",
             "value": "application/json"
           }
@@ -877,16 +619,6 @@
               "language": "json"
             }
           }
-        },
-        "auth": {
-          "type": "bearer",
-          "bearer": [
-            {
-              "key": "token",
-              "value": "{{serviceToken}}",
-              "type": "string"
-            }
-          ]
         }
       },
       "response": [
@@ -895,10 +627,6 @@
           "originalRequest": {
             "method": "POST",
             "header": [
-              {
-                "key": "X-Correlation-Id",
-                "value": "postman-{{$guid}}"
-              },
               {
                 "key": "Content-Type",
                 "value": "application/json"
@@ -914,16 +642,6 @@
                   "language": "json"
                 }
               }
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{serviceToken}}",
-                  "type": "string"
-                }
-              ]
             }
           },
           "status": "OK",
@@ -955,10 +673,6 @@
         "method": "POST",
         "header": [
           {
-            "key": "X-Correlation-Id",
-            "value": "postman-{{$guid}}"
-          },
-          {
             "key": "Content-Type",
             "value": "application/json"
           }
@@ -973,16 +687,6 @@
               "language": "json"
             }
           }
-        },
-        "auth": {
-          "type": "bearer",
-          "bearer": [
-            {
-              "key": "token",
-              "value": "{{serviceToken}}",
-              "type": "string"
-            }
-          ]
         }
       },
       "response": [
@@ -991,10 +695,6 @@
           "originalRequest": {
             "method": "POST",
             "header": [
-              {
-                "key": "X-Correlation-Id",
-                "value": "postman-{{$guid}}"
-              },
               {
                 "key": "Content-Type",
                 "value": "application/json"
@@ -1010,16 +710,6 @@
                   "language": "json"
                 }
               }
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{serviceToken}}",
-                  "type": "string"
-                }
-              ]
             }
           },
           "status": "OK",
@@ -1051,10 +741,6 @@
         "method": "POST",
         "header": [
           {
-            "key": "X-Correlation-Id",
-            "value": "postman-{{$guid}}"
-          },
-          {
             "key": "Content-Type",
             "value": "application/json"
           }
@@ -1069,16 +755,6 @@
               "language": "json"
             }
           }
-        },
-        "auth": {
-          "type": "bearer",
-          "bearer": [
-            {
-              "key": "token",
-              "value": "{{serviceToken}}",
-              "type": "string"
-            }
-          ]
         }
       },
       "response": [
@@ -1087,10 +763,6 @@
           "originalRequest": {
             "method": "POST",
             "header": [
-              {
-                "key": "X-Correlation-Id",
-                "value": "postman-{{$guid}}"
-              },
               {
                 "key": "Content-Type",
                 "value": "application/json"
@@ -1106,16 +778,6 @@
                   "language": "json"
                 }
               }
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{serviceToken}}",
-                  "type": "string"
-                }
-              ]
             }
           },
           "status": "OK",
@@ -1147,10 +809,6 @@
         "method": "POST",
         "header": [
           {
-            "key": "X-Correlation-Id",
-            "value": "postman-{{$guid}}"
-          },
-          {
             "key": "Content-Type",
             "value": "application/json"
           }
@@ -1165,16 +823,6 @@
               "language": "json"
             }
           }
-        },
-        "auth": {
-          "type": "bearer",
-          "bearer": [
-            {
-              "key": "token",
-              "value": "{{serviceToken}}",
-              "type": "string"
-            }
-          ]
         }
       },
       "response": [
@@ -1183,10 +831,6 @@
           "originalRequest": {
             "method": "POST",
             "header": [
-              {
-                "key": "X-Correlation-Id",
-                "value": "postman-{{$guid}}"
-              },
               {
                 "key": "Content-Type",
                 "value": "application/json"
@@ -1202,16 +846,6 @@
                   "language": "json"
                 }
               }
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{serviceToken}}",
-                  "type": "string"
-                }
-              ]
             }
           },
           "status": "OK",
@@ -1243,10 +877,6 @@
         "method": "POST",
         "header": [
           {
-            "key": "X-Correlation-Id",
-            "value": "postman-{{$guid}}"
-          },
-          {
             "key": "Content-Type",
             "value": "application/json"
           }
@@ -1261,16 +891,6 @@
               "language": "json"
             }
           }
-        },
-        "auth": {
-          "type": "bearer",
-          "bearer": [
-            {
-              "key": "token",
-              "value": "{{serviceToken}}",
-              "type": "string"
-            }
-          ]
         }
       },
       "response": [
@@ -1279,10 +899,6 @@
           "originalRequest": {
             "method": "POST",
             "header": [
-              {
-                "key": "X-Correlation-Id",
-                "value": "postman-{{$guid}}"
-              },
               {
                 "key": "Content-Type",
                 "value": "application/json"
@@ -1298,16 +914,6 @@
                   "language": "json"
                 }
               }
-            },
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{serviceToken}}",
-                  "type": "string"
-                }
-              ]
             }
           },
           "status": "Conflict",
@@ -1318,7 +924,7 @@
               "value": "application/json"
             }
           ],
-          "body": "{\n  \"timestamp\": \"2026-01-01T00:00:00Z\",\n  \"status\": 409,\n  \"code\": \"INSUFFICIENT_STOCK\",\n  \"message\": \"Insufficient stock for product 1001\",\n  \"path\": \"/internal/api/inventory/reserve\",\n  \"correlationId\": \"postman-example\",\n  \"availableQuantity\": 148,\n  \"requestedQuantity\": 1000000\n}"
+          "body": "{\n  \"timestamp\": \"2026-01-01T00:00:00Z\",\n  \"status\": 409,\n  \"code\": \"INSUFFICIENT_STOCK\",\n  \"message\": \"Insufficient stock for product 1001\",\n  \"path\": \"/internal/api/inventory/reserve\",\n  \"availableQuantity\": 148,\n  \"requestedQuantity\": 1000000\n}"
         }
       ],
       "event": [
@@ -1338,48 +944,18 @@
       "name": "16 Delete product",
       "request": {
         "method": "DELETE",
-        "header": [
-          {
-            "key": "X-Correlation-Id",
-            "value": "postman-{{$guid}}"
-          }
-        ],
+        "header": [],
         "url": "{{baseUrl}}/api/products/{{productId}}",
-        "description": "Soft deletion after inventory exercises. Inventory and reservation history remain.",
-        "auth": {
-          "type": "bearer",
-          "bearer": [
-            {
-              "key": "token",
-              "value": "{{adminToken}}",
-              "type": "string"
-            }
-          ]
-        }
+        "description": "Soft deletion after inventory exercises. Inventory and reservation history remain."
       },
       "response": [
         {
           "name": "204 example",
           "originalRequest": {
             "method": "DELETE",
-            "header": [
-              {
-                "key": "X-Correlation-Id",
-                "value": "postman-{{$guid}}"
-              }
-            ],
+            "header": [],
             "url": "{{baseUrl}}/api/products/{{productId}}",
-            "description": "Soft deletion after inventory exercises. Inventory and reservation history remain.",
-            "auth": {
-              "type": "bearer",
-              "bearer": [
-                {
-                  "key": "token",
-                  "value": "{{adminToken}}",
-                  "type": "string"
-                }
-              ]
-            }
+            "description": "Soft deletion after inventory exercises. Inventory and reservation history remain."
           },
           "status": "No Content",
           "code": 204,

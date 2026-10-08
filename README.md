@@ -6,8 +6,8 @@ An independent Java 21 / Spring Boot 3 Maven application on port **8083**. It ow
 
 | Document | What it covers |
 |---|---|
-| [Detailed development notes](docs/DEVELOPMENT_NOTES.md) | Layer-by-layer code walkthrough, JPA, validation, transactions, locking, security, tests, and learning exercises |
-| [API walkthrough](docs/API.md) | Requests, responses, authorization, and expected database changes |
+| [Detailed development notes](docs/DEVELOPMENT_NOTES.md) | Layer-by-layer code walkthrough, JPA, validation, transactions, locking, logging, tests, and learning exercises |
+| [API walkthrough](docs/API.md) | Requests, responses, and expected database changes |
 | [Inventory consistency](docs/CONCURRENCY.md) | Optimistic locking, retry semantics, and reservation state transitions |
 | [Verification record](docs/VERIFICATION.md) | Checks completed and checks still requiring a normal development environment |
 | [Postman collection](postman/product-service.postman_collection.json) | Importable requests with example responses and status assertions |
@@ -22,19 +22,17 @@ Start with the setup instructions below to run the service. Read the development
 - Inventory lookup and signed administrative stock adjustments.
 - Atomic multi-item reservations and idempotent release/confirmation.
 - Version checks to prevent competing orders from overselling stock.
-- JWT role authorization, request validation, consistent errors, and correlation IDs.
+- Request validation, consistent errors, and structured business-operation logs.
 - Swagger documentation, basic Actuator health, service tests, MockMvc tests, and PostgreSQL integration tests.
 
-**Verification status:** sources compiled and 25 service tests passed using cached-library fallback checks. The exact Maven dependency set, full controller suite, and PostgreSQL integration suite still need verification as described in the [verification record](docs/VERIFICATION.md).
+**Verification status:** the full Maven test suite passes locally. PostgreSQL integration tests still require a running PostgreSQL instance as described in the [verification record](docs/VERIFICATION.md).
 
 ## Architecture
 
 ```mermaid
 flowchart LR
-  Client[Client / Gateway :8080] --> Security[JWT validation and role checks]
-  Order[Future Order Service :8084] --> Security
-  Security --> PC[ProductController]
-  Security --> IC[InventoryController]
+  Client[Client / Gateway :8080] --> PC[ProductController]
+  Order[Future Order Service :8084] --> IC[InventoryController]
   PC --> PS[ProductService]
   IC --> IS[InventoryService]
   PS --> Repositories[Spring Data JPA repositories]
@@ -107,9 +105,7 @@ product-service/
     │       │   ├── InvalidInventoryOperationException.java
     │       │   └── GlobalExceptionHandler.java
     │       └── config/
-    │           ├── SecurityConfig.java
-    │           ├── OpenApiConfig.java
-    │           └── CorrelationIdFilter.java
+    │           └── OpenApiConfig.java
     └── test/
         ├── resources/application-integration.yml
         └── java/com/ecommerce/product/
@@ -124,9 +120,9 @@ product-service/
 
 [pom.xml](pom.xml) targets Java 21 and pins Spring Boot 3.5.13 with springdoc 2.8.17. Springdoc's [compatibility matrix](https://springdoc.org/v2/) pairs Boot 3.5.x with springdoc 2.8.x.
 
-[application.yml](src/main/resources/application.yml) sets the service name, port, PostgreSQL connection, JWT trust settings, logging, and health/info exposure. SQL logging is off by default; set `SHOW_SQL=true` for lessons. Timestamps are UTC (entity timestamps use LocalDateTime representing UTC).
+[application.yml](src/main/resources/application.yml) sets the service name, port, PostgreSQL connection, SQL logging, and health/info exposure. SQL logging is off by default; set `SHOW_SQL=true` for lessons. Timestamps are UTC (entity timestamps use LocalDateTime representing UTC).
 
-The requested combination of Spring Web, Security, and Actuator has unavoidable transitive Micrometer observation APIs. This project adds no metrics code, registry, exporter, tracing, or telemetry integration. It excludes Actuator's metrics core/Jakarta instrumentation dependencies and disables metrics/tracing. A literal zero-Micrometer classpath is incompatible with the requested Spring stack. See [Spring's Actuator documentation](https://docs.spring.io/spring-boot/reference/actuator/metrics.html).
+Actuator metrics and tracing are disabled. The project adds no metrics code, registry, exporter, or telemetry integration. See [Spring's Actuator documentation](https://docs.spring.io/spring-boot/reference/actuator/metrics.html).
 
 ### Environment variables
 
@@ -137,9 +133,6 @@ The requested combination of Spring Web, Security, and Actuator has unavoidable 
 | `DB_PASSWORD` | Empty | Database password |
 | `DDL_AUTO` | `update` | Local schema management; use `validate` with production migrations |
 | `SHOW_SQL` | `false` | Enable SQL output during lessons |
-| `JWT_ISSUER` | `http://localhost:8081` | Expected token issuer |
-| `JWT_JWK_SET_URI` | `http://localhost:8081/.well-known/jwks.json` | Auth Service public signing keys |
-| `JWT_AUDIENCE` | `product-service` | Required token audience |
 | `TEST_DB_URL` | `jdbc:postgresql://localhost:5432/product_test` | Disposable integration database |
 | `TEST_DB_USERNAME` | `postgres` | Integration database user |
 | `TEST_DB_PASSWORD` | Empty | Integration database password |
@@ -155,32 +148,22 @@ The `TEST_DB_*` variables apply to the integration test configuration. They do n
 5. Read InventoryServiceImpl: signed adjustment, reserve, release, confirm.
 6. Read controllers: HTTP status codes, validated parameters, stable allowed sorting.
 7. Read exceptions and GlobalExceptionHandler: consistent safe error documents.
-8. Read SecurityConfig, OpenApiConfig, and CorrelationIdFilter.
+8. Read OpenApiConfig.
 9. Run the tests, then follow the Postman collection.
 
 Product updates accept only name, description, and price. Unknown fields (including SKU, ID, stock, or status) return 400. Blank names, nonpositive prices, more than two decimal places, invalid IDs, empty item lists, and duplicate product IDs are rejected. Catalog pages exclude DELETED products. INACTIVE is modeled for future administration; new reservations require ACTIVE. Deleted SKUs remain reserved permanently.
 
-## Errors, security, Swagger, and health
+## Errors, OpenAPI, and health
 
-Public access: product GET routes, Swagger documentation, and health. ADMIN: create/update/delete products and adjust inventory. ADMIN or SERVICE: inventory lookup. SERVICE: reserve/release/confirm. All other routes are denied; info requires ADMIN.
-
-The service validates **RS256 JWTs**, obtained from your Auth Service, against its JWKS endpoint. It checks issuer, audience, timestamps, and signature. Roles are read from a top-level `roles` array containing `ADMIN` or `SERVICE`; they become Spring authorities `ROLE_ADMIN` or `ROLE_SERVICE`. A valid token for a different audience is rejected. This service does not issue tokens, include demo secrets, or implement an Auth Service.
-
-Example decoded claims (not a token):
-
-```json
-{"iss":"http://localhost:8081","aud":["product-service"],"sub":"order-service","roles":["SERVICE"],"exp":1893456000}
-```
-
-CSRF is disabled for these stateless bearer APIs. No cookie login or HTTP Basic is enabled. Configure HTTPS URLs for the Auth Service outside local training. The JWKS URL is explicit, so public browsing/startup does not require Auth Service discovery; authenticated requests require reachable signing keys.
+All application endpoints are available without an authentication header. Deployments that require authentication should enforce it at an API gateway or add a dedicated security layer before exposing the service publicly.
 
 Swagger UI: http://localhost:8083/swagger-ui/index.html  
 OpenAPI JSON: http://localhost:8083/v3/api-docs  
 Health: http://localhost:8083/actuator/health
 
-Use Swagger's **Authorize** button with a token from Auth Service. OpenAPI includes DTO validation, examples, status codes, error schema, and bearer requirements. Only health/info Actuator endpoints are exposed.
+Swagger UI documents DTO validation, examples, status codes, and error schemas. Only health/info Actuator endpoints are exposed.
 
-Every response carries `X-Correlation-Id`. A supplied ID of 1–64 letters, digits, dots, underscores, or hyphens is preserved; otherwise a UUID is generated. It appears in logs and error JSON. Tokens, credentials, and adjustment reason text are not logged.
+Mutation logs include the relevant product, order, and quantity identifiers. Credentials and adjustment reason text are not logged.
 
 ## Local startup and testing
 
@@ -200,14 +183,11 @@ Configure environment variables in PowerShell:
 ```powershell
 $env:DB_USERNAME = "postgres"
 $env:DB_PASSWORD = Read-Host "PostgreSQL password"
-$env:JWT_ISSUER = "http://localhost:8081"
-$env:JWT_JWK_SET_URI = "http://localhost:8081/.well-known/jwks.json"
-$env:JWT_AUDIENCE = "product-service"
 mvn clean verify
 mvn spring-boot:run
 ```
 
-On Bash, use `export DB_USERNAME=postgres`, `read -s DB_PASSWORD; export DB_PASSWORD`, and corresponding `export JWT_...=...` commands. Environment values must match your actual Auth Service. Do not commit passwords or tokens.
+On Bash, use `export DB_USERNAME=postgres` and `read -s DB_PASSWORD; export DB_PASSWORD`. Do not commit passwords.
 
 To run the packaged application:
 
@@ -216,9 +196,9 @@ java -jar target/product-service-1.0.0.jar
 curl http://localhost:8083/actuator/health
 ```
 
-Health returns `{"status":"UP"}` when the database is reachable. Import [the Postman collection](postman/product-service.postman_collection.json), set its `adminToken` and `serviceToken` variables using Auth Service tokens, and run in order. It captures product/order IDs and asserts expected statuses. Saved responses illustrate the business scenarios.
+Health returns `{"status":"UP"}` when the database is reachable. Import [the Postman collection](postman/product-service.postman_collection.json) and run the requests in order. It captures product/order IDs and asserts expected statuses. Saved responses illustrate the business scenarios.
 
-Unit/service and MockMvc tests require no PostgreSQL or Auth Service:
+Unit/service and MockMvc tests require no PostgreSQL:
 
 ```shell
 mvn test
@@ -257,13 +237,12 @@ See [API examples and inventory changes](docs/API.md), [concurrency explanation]
 | PostgreSQL connection refused | Confirm PostgreSQL is running and `DB_URL` has the correct port and database |
 | Database authentication failed | Check `DB_USERNAME`, `DB_PASSWORD`, and PostgreSQL authentication configuration |
 | Port 8083 is occupied | Stop the conflicting local process or set `SERVER_PORT` and update client URLs |
-| Protected endpoint returns 401 | Check bearer token, signing keys, issuer, audience, and token timestamps |
-| Protected endpoint returns 403 | Check the top-level `roles` claim against the endpoint's required role |
+| API request is rejected | Check the request path, HTTP method, JSON body, and validation constraints |
 | Reservation returns 409 | Read the error code: insufficient stock, changed order payload, invalid state, and version conflicts require different responses |
 | Integration tests remove test data | They intentionally use `create-drop`; configure a dedicated disposable database |
 | An adjusted quantity increases twice | Adjustment applies a delta and is not retry-safe; inspect current stock before taking corrective action |
 
-For a reproducible last-unit race, create an ACTIVE product with one available unit and run [the concurrency script](scripts/concurrent-reservation.ps1) with PowerShell 7 and a SERVICE token.
+For a reproducible last-unit race, create an ACTIVE product with one available unit and run [the concurrency script](scripts/concurrent-reservation.ps1) with PowerShell 7.
 
 ## Production schema management
 
@@ -271,4 +250,4 @@ For a reproducible last-unit race, create an ACTIVE product with one available u
 
 On an existing database, inspect and reconcile its schema before baselining; do not run a fresh CREATE TABLE baseline over existing tables. Subsequent changes belong in new, reviewed versioned migrations. The baseline includes foreign keys, uniqueness, positive prices/quantities, and counter checks. Retain reservation history for idempotency; do not purge or reuse an order ID while clients can retry it.
 
-No gateway, Order Service, Feign client, Resilience4j client, Eureka, Docker, Kubernetes, Lombok, Config Server, or telemetry exporter is included. Future Order Service clients should set HTTP timeouts and retry only appropriate failures with the same order ID and identical payload. A reservation response may report a terminal status on replay; clients must inspect it.
+No gateway, Order Service, Feign client, Resilience4j client, Eureka, Docker, Kubernetes, Config Server, or telemetry exporter is included. Lombok is used for boilerplate reduction in entities, constructors, and logging. Future Order Service clients should set HTTP timeouts and retry only appropriate failures with the same order ID and identical payload. A reservation response may report a terminal status on replay; clients must inspect it.

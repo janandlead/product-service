@@ -3,7 +3,7 @@ package com.ecommerce.product.exception;
 import com.ecommerce.product.dto.response.ErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.ConstraintViolationException;
-import org.slf4j.*;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.*;
 import org.springframework.http.*;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -17,8 +17,8 @@ import java.time.Instant;
 import java.util.*;
 
 @RestControllerAdvice
+@Slf4j
 public class GlobalExceptionHandler {
-	private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
 	@ExceptionHandler(ProductNotFoundException.class)
 	ResponseEntity<ErrorResponse> missing(ProductNotFoundException e, HttpServletRequest r) {
@@ -35,7 +35,7 @@ public class GlobalExceptionHandler {
 		log.warn("Insufficient stock: {}", e.getMessage());
 		return ResponseEntity.status(409)
 				.body(new ErrorResponse(Instant.now(), 409, "INSUFFICIENT_STOCK", e.getMessage(), r.getRequestURI(),
-						MDC.get("correlationId"), e.getAvailableQuantity(), e.getRequestedQuantity(), null));
+						e.getAvailableQuantity(), e.getRequestedQuantity(), null));
 	}
 
 	@ExceptionHandler(InvalidInventoryOperationException.class)
@@ -67,7 +67,7 @@ public class GlobalExceptionHandler {
 		Map<String, String> fields = new TreeMap<>();
 		e.getBindingResult().getFieldErrors().forEach(f -> fields.putIfAbsent(f.getField(), f.getDefaultMessage()));
 		return ResponseEntity.badRequest().body(new ErrorResponse(Instant.now(), 400, "VALIDATION_ERROR",
-				"Request validation failed", r.getRequestURI(), MDC.get("correlationId"), null, null, fields));
+				"Request validation failed", r.getRequestURI(), null, null, fields));
 	}
 
 	@ExceptionHandler({ IllegalArgumentException.class, ConstraintViolationException.class,
@@ -100,6 +100,6 @@ public class GlobalExceptionHandler {
 
 	private ResponseEntity<ErrorResponse> error(int status, String code, String message, HttpServletRequest r) {
 		return ResponseEntity.status(status).body(new ErrorResponse(Instant.now(), status, code, message,
-				r.getRequestURI(), MDC.get("correlationId"), null, null, null));
+				r.getRequestURI(), null, null, null));
 	}
 }

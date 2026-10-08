@@ -5,7 +5,6 @@ import io.swagger.v3.oas.models.*;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.media.*;
 import io.swagger.v3.oas.models.responses.ApiResponse;
-import io.swagger.v3.oas.models.security.*;
 import org.springdoc.core.customizers.OpenApiCustomizer;
 import org.springframework.context.annotation.*;
 import java.util.Map;
@@ -13,11 +12,10 @@ import java.util.Map;
 @Configuration
 public class OpenApiConfig {
     @Bean OpenAPI openAPI() {
-        Components components = new Components().addSecuritySchemes("bearerAuth",
-            new SecurityScheme().type(SecurityScheme.Type.HTTP).scheme("bearer").bearerFormat("JWT"));
+        Components components = new Components();
         ModelConverters.getInstance().read(ErrorResponse.class).forEach(components::addSchemas);
         return new OpenAPI().info(new Info().title("Product Service").version("1.0.0")
-            .description("Catalog and atomic inventory APIs. Auth Service issues RS256 JWTs with audience product-service and roles ADMIN or SERVICE."))
+            .description("Catalog and atomic inventory APIs."))
             .components(components);
     }
     @Bean OpenApiCustomizer examplesAndErrors() {
@@ -28,8 +26,8 @@ public class OpenApiConfig {
                     .content(new Content().addMediaType("application/json", new MediaType()
                         .schema(new Schema<>().$ref("#/components/schemas/ProductResponse")))));
             }
-            for (var entry : Map.of("400", "Invalid request", "401", "Missing or invalid JWT",
-                    "403", "Role not allowed", "404", "Product not found", "409", "Stock, state or concurrency conflict",
+            for (var entry : Map.of("400", "Invalid request",
+                    "404", "Product not found", "409", "Stock, state or concurrency conflict",
                     "500", "Unexpected server error").entrySet()) {
                 String code = entry.getKey();
                 op.getResponses().addApiResponse(code, new ApiResponse().description(entry.getValue())
@@ -37,7 +35,7 @@ public class OpenApiConfig {
                         .schema(new Schema<>().$ref("#/components/schemas/ErrorResponse"))
                         .example(Map.of("timestamp", "2026-01-01T00:00:00Z", "status", Integer.parseInt(code),
                             "code", code.equals("409") ? "INSUFFICIENT_STOCK" : "ERROR",
-                            "message", entry.getValue(), "path", path, "correlationId", "demo-123")))));
+                            "message", entry.getValue(), "path", path)))));
             }
             if (op.getRequestBody() != null && op.getRequestBody().getContent() != null) {
                 Object example = path.endsWith("/reserve")

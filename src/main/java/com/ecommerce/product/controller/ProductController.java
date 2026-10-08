@@ -4,10 +4,10 @@ import com.ecommerce.product.dto.request.*;
 import com.ecommerce.product.dto.response.*;
 import com.ecommerce.product.service.ProductService;
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.*;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
@@ -17,16 +17,13 @@ import java.util.Set;
 @RestController
 @RequestMapping("/api/products")
 @Tag(name = "Products", description = "Public catalog browsing; ADMIN manages products")
+@RequiredArgsConstructor
 public class ProductController {
 	private final ProductService service;
 	private static final Set<String> SORT_FIELDS = Set.of("id", "sku", "name", "price", "createdAt", "updatedAt");
 
-	public ProductController(ProductService service) {
-		this.service = service;
-	}
-
 	@PostMapping
-	@Operation(summary = "Create product and initial inventory atomically", security = @SecurityRequirement(name = "bearerAuth"))
+	@Operation(summary = "Create product and initial inventory atomically")
 	public ResponseEntity<ProductResponse> create(@Valid @RequestBody ProductCreateRequest request) {
 		ProductResponse response = service.createProduct(request);
 		return ResponseEntity.created(URI.create("/api/products/" + response.id())).body(response);
@@ -56,7 +53,7 @@ public class ProductController {
 	}
 
 	@PutMapping("/{productId}")
-	@Operation(summary = "Update product details; SKU and stock are immutable here", security = @SecurityRequirement(name = "bearerAuth"))
+	@Operation(summary = "Update product details; SKU and stock are immutable here")
 	public ProductResponse update(@PathVariable @Positive Long productId,
 			@Valid @RequestBody ProductUpdateRequest request) {
 		return service.updateProduct(productId, request);
@@ -64,7 +61,7 @@ public class ProductController {
 
 	@DeleteMapping("/{productId}")
 	@ResponseStatus(HttpStatus.NO_CONTENT)
-	@Operation(summary = "Soft-delete a product", security = @SecurityRequirement(name = "bearerAuth"))
+	@Operation(summary = "Soft-delete a product")
 	public void delete(@PathVariable @Positive Long productId) {
 		service.deleteProduct(productId);
 	}

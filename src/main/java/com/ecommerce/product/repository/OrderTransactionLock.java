@@ -1,6 +1,7 @@
 package com.ecommerce.product.repository;
 
 import jakarta.persistence.EntityManager;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 /**
@@ -8,12 +9,9 @@ import org.springframework.stereotype.Repository;
  * including its first reservation.
  */
 @Repository
+@RequiredArgsConstructor
 public class OrderTransactionLock {
 	private final EntityManager entityManager;
-
-	public OrderTransactionLock(EntityManager entityManager) {
-		this.entityManager = entityManager;
-	}
 
 	public void acquire(Long orderId) {
 		// Transaction-scoped: PostgreSQL releases this automatically on commit or

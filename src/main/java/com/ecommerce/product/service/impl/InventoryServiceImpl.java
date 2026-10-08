@@ -7,27 +7,21 @@ import com.ecommerce.product.enums.*;
 import com.ecommerce.product.exception.*;
 import com.ecommerce.product.repository.*;
 import com.ecommerce.product.service.InventoryService;
-import org.slf4j.*;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.*;
 
 @Service
 @Transactional(readOnly = true)
+@RequiredArgsConstructor
+@Slf4j
 public class InventoryServiceImpl implements InventoryService {
-	private static final Logger log = LoggerFactory.getLogger(InventoryServiceImpl.class);
 	private final ProductRepository products;
 	private final InventoryRepository inventories;
 	private final InventoryReservationRepository reservations;
 	private final OrderTransactionLock orderLock;
-
-	public InventoryServiceImpl(ProductRepository products, InventoryRepository inventories,
-			InventoryReservationRepository reservations, OrderTransactionLock orderLock) {
-		this.products = products;
-		this.inventories = inventories;
-		this.reservations = reservations;
-		this.orderLock = orderLock;
-	}
 
 	@Override
 	public InventoryResponse getInventory(Long productId) {

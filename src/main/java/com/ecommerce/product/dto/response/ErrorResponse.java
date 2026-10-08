@@ -4,5 +4,5 @@ import java.time.Instant;
 import java.util.Map;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record ErrorResponse(Instant timestamp, int status, String code, String message, String path,
-    String correlationId, Integer availableQuantity, Integer requestedQuantity, Map<String, String> fieldErrors) {}
+    Integer availableQuantity, Integer requestedQuantity, Map<String, String> fieldErrors) {}
 

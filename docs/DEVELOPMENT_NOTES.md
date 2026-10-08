@@ -9,25 +9,23 @@ These notes explain the code in this repository for Java and Spring Boot student
 3. Follow Product CRUD, then inventory adjustment.
 4. Study reservation, release, and confirmation.
 5. Understand transaction rollback, optimistic locking, and idempotency.
-6. Review JWT security, errors, logging, and configuration.
+6. Review errors, logging, OpenAPI, and configuration.
 7. Run the tests and practice the inventory scenarios.
 
 ## 1. Service ownership and architecture
 
-Product Service owns catalog details, stock counters, and reservation records. Order Service will own order lifecycle information. Auth Service owns authentication and token issuance.
+Product Service owns catalog details, stock counters, and reservation records. Order Service will own order lifecycle information. Authentication is outside this application boundary.
 
 A reservation's order ID is a business reference. It does not grant Product Service ownership of the order, and there is no foreign key into another service's database.
 
 ```mermaid
 flowchart TD
-    A[HTTP request] --> B[Correlation ID filter]
-    B --> C[Spring Security]
-    C --> D[Controller and validation]
-    D --> E[Service transaction]
-    E --> F[Repositories and entities]
-    F --> G[(PostgreSQL)]
-    E --> H[Response DTO]
-    H --> I[JSON response]
+    A[HTTP request] --> B[Controller and validation]
+    B --> C[Service transaction]
+    C --> D[Repositories and entities]
+    D --> E[(PostgreSQL)]
+    C --> F[Response DTO]
+    F --> G[JSON response]
 ```
 
 Controllers validate input and delegate. Services coordinate business rules inside transactions. Repositories execute database operations. Entities represent persistent state and protect valid state changes. DTOs define the HTTP contract without exposing persistence entities.
@@ -41,21 +39,19 @@ Read [pom.xml](../pom.xml) and [ProductServiceApplication](../src/main/java/com/
 | Spring Web | HTTP routing, controllers, JSON conversion |
 | Spring Data JPA | Entity persistence and repository implementations |
 | Spring Validation | Jakarta Validation constraints |
-| Spring Security | Security filters and endpoint authorization |
-| OAuth2 Resource Server | Externally issued JWT validation |
+| Lombok | Generated getters, constructors, and loggers |
 | PostgreSQL driver | JDBC communication with PostgreSQL |
 | Springdoc | OpenAPI specification and Swagger UI |
 | Actuator | Basic health and info endpoints |
 | Spring Boot Test | JUnit, Mockito, Spring tests, MockMvc |
-| Spring Security Test | Security-aware test requests |
 
 The POM targets Java 21 and pins Boot 3.5.13 and springdoc 2.8.17. These are the project's configured versions.
 
 The main method calls `SpringApplication.run`. The application class sits in `com.ecommerce.product`, allowing component scanning to discover its child packages.
 
-During startup, Spring creates components, injects dependencies, configures repositories and JPA, and registers controllers and filters. Database configuration must be valid for the application to initialize successfully.
+During startup, Spring creates components, injects dependencies, configures repositories and JPA, and registers controllers. Database configuration must be valid for the application to initialize successfully.
 
-The service does not issue tokens or implement another microservice. Protected HTTP operations require an Auth Service-issued token.
+The service does not implement authentication. All application endpoints are currently public; deployments that need authentication should enforce it at the gateway or add a dedicated security layer.
 
 ## 3. Packages and constructor injection
 
@@ -71,7 +67,7 @@ The service does not issue tokens or implement another microservice. Protected H
 | `mapper` | Product entity/DTO conversion |
 | `enums` | Lifecycle values |
 | `exception` | Business exceptions and HTTP error mapping |
-| `config` | Security, OpenAPI, correlation filter |
+| `config` | OpenAPI and request configuration |
 
 Dependencies arrive through constructors. For example, InventoryServiceImpl receives the product, inventory, and reservation repositories plus OrderTransactionLock.
 
@@ -217,7 +213,7 @@ Removing 90 from the original stock would leave total=10 with 20 reserved. The e
 
 The adjustment calculation uses a wider `long` temporary to detect overflow before converting back to `int`. Zero adjustments and results beyond Integer.MAX_VALUE are rejected.
 
-Adjustment changes no reservation record. It requires ADMIN and is not idempotent: repeating +50 applies another +50. The reason is validated but is not stored as a durable audit record in this version.
+Adjustment changes no reservation record and is not idempotent: repeating +50 applies another +50. The reason is validated but is not stored as a durable audit record in this version.
 
 ## 9. Reservation flow
 
@@ -298,7 +294,7 @@ The business exceptions here are unchecked. When they leave a transactional serv
 
 Spring applies transactions through a proxy. A direct call to another method on the same instance does not create a new proxy transaction. The private `complete` helper is safe in this design because its public release/confirm caller already started the transaction.
 
-The read-only annotation communicates transaction intent. It is not an authorization control.
+The read-only annotation communicates transaction intent; it does not change endpoint access.
 
 ## 12. Optimistic locking and overselling
 
@@ -359,44 +355,15 @@ Do not blindly retry every conflict. Insufficient stock, changed payloads, and t
 
 See [Inventory consistency](CONCURRENCY.md) for additional discussion.
 
-## 14. Authentication and authorization
+## 14. API access
 
-Read [SecurityConfig](../src/main/java/com/ecommerce/product/config/SecurityConfig.java).
+The application does not contain an authentication or authorization layer. All catalog and inventory endpoints are currently public and accept requests without bearer headers.
 
-Authentication establishes whether the service trusts a bearer token. Authorization decides whether its roles allow the operation.
+If the service is deployed outside a trusted network, enforce authentication and authorization at an API gateway or add a dedicated security module. That external layer should protect mutation and internal inventory routes according to the deployment's requirements.
 
-The decoder uses the Auth Service JWKS public keys and the RS256 default. It validates signature, expected issuer, audience, and applicable timestamp claims. Product Service does not receive a signing private key or issue JWTs.
+## 15. Errors and logging
 
-Roles are read from a top-level claim:
-
-```json
-{"roles":["SERVICE"],"aud":["product-service"],"iss":"http://localhost:8081"}
-```
-
-This is a claim fragment, not a signed usable token. SERVICE maps to ROLE_SERVICE; ADMIN maps to ROLE_ADMIN.
-
-| API group | Access |
-|---|---|
-| Catalog GET | Public |
-| Create/update/delete product | ADMIN |
-| Inventory lookup | ADMIN or SERVICE |
-| Inventory adjustment | ADMIN |
-| Reserve/release/confirm | SERVICE |
-| Swagger and health | Public |
-| Actuator info | ADMIN |
-| Other routes | Denied |
-
-ADMIN does not automatically imply SERVICE.
-
-401 means authentication is missing or invalid. 403 means authenticated access lacks the required permission.
-
-The API is stateless and expects bearer headers. There is no login session or HTTP Basic setup. CSRF is disabled for this usage; reassess this choice if cookie authentication is introduced.
-
-A MockMvc JWT helper provides test authentication. It does not prove real signature validation or JWKS connectivity.
-
-## 15. Errors, logging, and correlation IDs
-
-Read [GlobalExceptionHandler](../src/main/java/com/ecommerce/product/exception/GlobalExceptionHandler.java) and [CorrelationIdFilter](../src/main/java/com/ecommerce/product/config/CorrelationIdFilter.java).
+Read [GlobalExceptionHandler](../src/main/java/com/ecommerce/product/exception/GlobalExceptionHandler.java).
 
 | Failure | Status | Typical code |
 |---|---:|---|
@@ -407,32 +374,26 @@ Read [GlobalExceptionHandler](../src/main/java/com/ecommerce/product/exception/G
 | Version conflict | 409 | CONCURRENT_INVENTORY_CONFLICT |
 | Invalid body constraint | 400 | VALIDATION_ERROR |
 | Invalid body/path/query | 400 | INVALID_REQUEST |
-| Missing/invalid authentication | 401 | UNAUTHORIZED |
-| Wrong role | 403 | FORBIDDEN |
 | Unexpected failure | 500 | INTERNAL_ERROR |
 
-Responses contain timestamp, status, code, message, path, and correlation ID. Validation can add field errors; insufficient stock adds available/requested quantities. Unexpected failures do not expose SQL or stack traces in HTTP responses.
+Responses contain timestamp, status, code, and path. Validation can add field errors; insufficient stock adds available/requested quantities. Unexpected failures do not expose SQL or stack traces in HTTP responses.
 
-Security errors happen before controller handling. SecurityConfig therefore writes the same error shape through dedicated authentication and access-denied handlers.
+Mutation logs include relevant product, order, and quantity identifiers. Credentials and request-sensitive text are not logged.
 
-The correlation filter preserves an accepted X-Correlation-Id or creates a UUID. Accepted values have 1 to 64 letters, digits, dots, underscores, or hyphens. It places the value in MDC and the response header, then clears MDC in a finally block.
-
-Cleanup matters because a web server reuses request threads. A previous request's ID must not leak into a later request's log entries.
-
-Logs use product/order identifiers for business events. Credentials and JWTs should never be included. Service event logs are written before transaction completion, so a log line alone is not proof that the operation committed.
+Service event logs are written before transaction completion, so a log line alone is not proof that the operation committed.
 
 
 ## 16. Configuration, Swagger, and health
 
 Read [application.yml](../src/main/resources/application.yml) and the environment-variable table in the README.
 
-The application uses port 8083 and the product_db database by default. Environment overrides supply credentials and JWT trust settings. Test database variables are separate from normal application variables.
+The application uses port 8083 and the product_db database by default. Environment overrides supply database credentials. Test database variables are separate from normal application variables.
 
 Open Session in View is disabled. Services should finish persistence work before returning DTOs; controllers must not rely on lazy loading while rendering a response.
 
 Entity timestamps use UTC. SQL logging is off by default and can be enabled with SHOW_SQL=true during a lesson.
 
-OpenAPI describes operations, validation constraints, bearer security, examples, and errors. Swagger UI is an interactive client, not a way around authorization.
+OpenAPI describes operations, validation constraints, examples, and errors. Swagger UI is an interactive client for this public API.
 
 | Purpose | Local URL |
 |---|---|
@@ -456,9 +417,7 @@ Mock repositories cannot prove database rollback or concurrent update behavior. 
 
 ### Controller tests
 
-WebMvcTest loads an MVC slice, the security configuration, and a mocked service. MockMvc exercises routing, request validation, JSON shapes, HTTP status codes, and endpoint roles.
-
-The JWT decoder is mocked where appropriate. These tests do not replace a real-token test against the configured Auth Service.
+WebMvcTest loads an MVC slice and a mocked service. MockMvc exercises routing, request validation, JSON shapes, HTTP status codes, and error handling.
 
 ### PostgreSQL tests
 
@@ -487,7 +446,7 @@ Surefire runs the service/controller Test classes. The integration Maven profile
 
 The integration configuration uses create-drop and clears tables between tests. It must point to a dedicated product_test database, not application data.
 
-There are 60 test methods: 25 service, 24 controller, and 11 integration tests. Historical checks compiled all sources and passed 25 service tests using cached dependencies. The exact Maven dependency build, full controller suite, and PostgreSQL integration suite still need normal-environment verification. Test existence and successful test execution are different claims.
+The test suite contains service, controller, and PostgreSQL integration tests. The standard `mvn test` command runs unit and controller tests; the integration Maven profile runs the PostgreSQL tests. Test existence and successful test execution are different claims.
 
 ## 18. Guided local practice
 
@@ -496,16 +455,15 @@ There are 60 test methods: 25 service, 24 controller, and 11 integration tests. 
 1. Install Java 21, Maven, and PostgreSQL.
 2. Check that java -version and mvn -version use Java 21.
 3. Create product_db and a separate product_test database.
-4. Configure database and JWT environment variables from the README.
-5. Obtain ADMIN and SERVICE tokens from Auth Service for protected requests.
-6. Build, then start the application.
+4. Configure database environment variables from the README.
+5. Build, then start the application.
 
 ```shell
 mvn clean verify
 mvn spring-boot:run
 ```
 
-Check health and open Swagger UI. Import the [Postman collection](../postman/product-service.postman_collection.json), set its token variables, and run requests in order.
+Check health and open Swagger UI. Import the [Postman collection](../postman/product-service.postman_collection.json) and run requests in order.
 
 ### Follow the stock changes
 
@@ -542,7 +500,7 @@ Stock counters should agree with the reservation states. A no-op replay should n
 Create a fresh ACTIVE product with one available unit. Replace 1003 below with its actual ID and run PowerShell 7:
 
 ```powershell
-./scripts/concurrent-reservation.ps1 -ProductId 1003 -ServiceToken $env:SERVICE_TOKEN
+./scripts/concurrent-reservation.ps1 -ProductId 1003
 ```
 
 Expected outcome: one successful reservation and one conflict, leaving total=1, reserved=1, available=0. The sequential Postman runner does not by itself test simultaneous requests.
@@ -597,7 +555,7 @@ For an existing database, inspect and reconcile its schema before baselining. Su
 
 Keep reservation records for as long as legitimate retries can arrive. Purging them or reusing order IDs changes the idempotency contract.
 
-Before deployment, run the complete declared dependency build, PostgreSQL suite, and protected API checks with real tokens. The cached-library fallback checks do not replace those steps.
+Before deployment, run the complete declared dependency build, PostgreSQL suite, and API checks through the deployment's configured access layer.
 
 ## 21. Review questions and exercises
 

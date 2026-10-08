@@ -2,6 +2,8 @@ package com.ecommerce.product.entity;
 
 import com.ecommerce.product.enums.ProductStatus;
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 import org.hibernate.annotations.Check;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -10,6 +12,8 @@ import java.time.ZoneOffset;
 @Entity
 @Table(name = "products", uniqueConstraints = @UniqueConstraint(name = "uk_product_sku", columnNames = "sku"))
 @Check(constraints = "price > 0")
+@Getter
+@NoArgsConstructor(access = lombok.AccessLevel.PROTECTED)
 public class Product {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -23,7 +27,6 @@ public class Product {
     @Column(nullable = false, updatable = false) private LocalDateTime createdAt;
     @Column(nullable = false) private LocalDateTime updatedAt;
 
-    protected Product() {}
     public Product(String sku, String name, String description, BigDecimal price) {
         this.sku = sku;
         update(name, description, price);
@@ -40,12 +43,4 @@ public class Product {
     public void delete() { this.status = ProductStatus.DELETED; }
     @PrePersist void onCreate() { createdAt = LocalDateTime.now(ZoneOffset.UTC); updatedAt = createdAt; }
     @PreUpdate void onUpdate() { updatedAt = LocalDateTime.now(ZoneOffset.UTC); }
-    public Long getId() { return id; }
-    public String getSku() { return sku; }
-    public String getName() { return name; }
-    public String getDescription() { return description; }
-    public BigDecimal getPrice() { return price; }
-    public ProductStatus getStatus() { return status; }
-    public LocalDateTime getCreatedAt() { return createdAt; }
-    public LocalDateTime getUpdatedAt() { return updatedAt; }
 }

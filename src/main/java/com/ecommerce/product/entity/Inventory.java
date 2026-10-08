@@ -3,6 +3,8 @@ package com.ecommerce.product.entity;
 import com.ecommerce.product.exception.InvalidInventoryOperationException;
 import com.ecommerce.product.exception.InsufficientStockException;
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 import org.hibernate.annotations.Check;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -10,6 +12,8 @@ import java.time.ZoneOffset;
 @Entity
 @Table(name = "inventory", uniqueConstraints = @UniqueConstraint(name = "uk_inventory_product", columnNames = "product_id"))
 @Check(constraints = "total_quantity >= 0 and reserved_quantity >= 0 and reserved_quantity <= total_quantity")
+@Getter
+@NoArgsConstructor(access = lombok.AccessLevel.PROTECTED)
 public class Inventory {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY) private Long id;
     @Column(name = "product_id", nullable = false, updatable = false) private Long productId;
@@ -21,7 +25,6 @@ public class Inventory {
     @Column(name = "reserved_quantity", nullable = false) private Integer reservedQuantity;
     @Version private Long version;
     @Column(nullable = false) private LocalDateTime updatedAt;
-    protected Inventory() {}
     public Inventory(Long productId, int quantity) {
         if (quantity < 0) throw new InvalidInventoryOperationException("Initial stock cannot be negative");
         this.productId = productId; this.totalQuantity = quantity; this.reservedQuantity = 0;
@@ -47,11 +50,5 @@ public class Inventory {
         if (quantity > reservedQuantity) throw new InvalidInventoryOperationException("Reservation counters are inconsistent");
     }
     @PrePersist @PreUpdate void timestamp() { updatedAt = LocalDateTime.now(ZoneOffset.UTC); }
-    public Long getId() { return id; }
-    public Long getProductId() { return productId; }
-    public Integer getTotalQuantity() { return totalQuantity; }
-    public Integer getReservedQuantity() { return reservedQuantity; }
     public int getAvailableQuantity() { return totalQuantity - reservedQuantity; }
-    public Long getVersion() { return version; }
-    public LocalDateTime getUpdatedAt() { return updatedAt; }
 }

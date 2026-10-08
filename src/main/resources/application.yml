@@ -22,11 +22,6 @@ spring:
     deserialization:
       fail-on-unknown-properties: true
       accept-float-as-int: false
-app:
-  security:
-    issuer: ${JWT_ISSUER:http://localhost:8081}
-    jwk-set-uri: ${JWT_JWK_SET_URI:http://localhost:8081/.well-known/jwks.json}
-    audience: ${JWT_AUDIENCE:product-service}
 management:
   endpoints:
     web:
@@ -40,6 +35,3 @@ management:
       all: false
   tracing:
     enabled: false
-logging:
-  pattern:
-    level: "%5p [correlationId=%X{correlationId}]"

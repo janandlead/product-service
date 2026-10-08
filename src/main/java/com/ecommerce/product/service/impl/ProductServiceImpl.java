@@ -8,24 +8,20 @@ import com.ecommerce.product.exception.*;
 import com.ecommerce.product.mapper.ProductMapper;
 import com.ecommerce.product.repository.*;
 import com.ecommerce.product.service.ProductService;
-import org.slf4j.*;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @Transactional(readOnly = true)
+@RequiredArgsConstructor
+@Slf4j
 public class ProductServiceImpl implements ProductService {
-	private static final Logger log = LoggerFactory.getLogger(ProductServiceImpl.class);
 	private final ProductRepository products;
 	private final InventoryRepository inventories;
 	private final ProductMapper mapper;
-
-	public ProductServiceImpl(ProductRepository products, InventoryRepository inventories, ProductMapper mapper) {
-		this.products = products;
-		this.inventories = inventories;
-		this.mapper = mapper;
-	}
 
 	@Override
 	@Transactional

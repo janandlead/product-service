@@ -2,6 +2,8 @@ package com.ecommerce.product.entity;
 
 import com.ecommerce.product.enums.ReservationStatus;
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 import org.hibernate.annotations.Check;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -9,6 +11,8 @@ import java.time.ZoneOffset;
 @Entity
 @Table(name = "inventory_reservations", uniqueConstraints = @UniqueConstraint(name = "uk_reservation_order_product", columnNames = {"order_id", "product_id"}))
 @Check(constraints = "quantity > 0 and order_id > 0")
+@Getter
+@NoArgsConstructor(access = lombok.AccessLevel.PROTECTED)
 public class InventoryReservation {
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY) private Long id;
     @Column(name = "order_id", nullable = false, updatable = false) private Long orderId;
@@ -22,7 +26,6 @@ public class InventoryReservation {
     @Version private Long version;
     @Column(nullable = false, updatable = false) private LocalDateTime createdAt;
     @Column(nullable = false) private LocalDateTime updatedAt;
-    protected InventoryReservation() {}
     public InventoryReservation(Long orderId, Long productId, int quantity) {
         this.orderId = orderId; this.productId = productId; this.quantity = quantity;
         this.status = ReservationStatus.RESERVED;
@@ -34,9 +37,4 @@ public class InventoryReservation {
     }
     @PrePersist void onCreate() { createdAt = LocalDateTime.now(ZoneOffset.UTC); updatedAt = createdAt; }
     @PreUpdate void onUpdate() { updatedAt = LocalDateTime.now(ZoneOffset.UTC); }
-    public Long getId() { return id; }
-    public Long getOrderId() { return orderId; }
-    public Long getProductId() { return productId; }
-    public Integer getQuantity() { return quantity; }
-    public ReservationStatus getStatus() { return status; }
 }
